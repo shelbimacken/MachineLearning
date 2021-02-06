@@ -109,7 +109,7 @@ subPredict<- predict(forest, subTest, type = "class")
 confusionMatrix(subPredict, subTest$classe)
 ```
 
-We can see here that our accuracy is much higher (99.56%). Additionally, our Positive and Negative predictive values are much closer to 1 for all classes as compared to the Decision Tree model. This will be the final model used for our final test. 
+We can see here that our accuracy is much higher (99.56%). Additionally, our Positive and Negative predictive values are much closer to 1 for all classes as compared to the Decision Tree model. This will be the final model used for our final testing. 
 
 ### Final Test
 
