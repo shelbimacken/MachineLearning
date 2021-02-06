@@ -1,0 +1,127 @@
+---
+title: "Machine Learning"
+author: "Shelbi"
+date: "2/6/2021"
+output: html_document
+---
+## Overview
+
+This assignment uses the data from the Groupware Human Activity Recognition data (http://groupware.les.inf.puc-rio.br/har). The data used specifically for this assignment was for the barbell lifting exercise. Six participants were asked to perform barbell lifts correctly and incorrectly in 5 different ways while wearing fitness monitors on the belt, forearm, arm and dumbbell. 
+
+The goal of this assignment is to be able to classify or predict the manner in which the participant completed the exercise (classe variable). 
+
+Classe A = specified execution of the exercise
+
+Classe B = throwing the elbows to the front
+
+Classe C = lifting the dumbbell only halfway
+
+Classe D = lowering the dumbbell only halfway
+
+Classe E = throwing the hips to the front 
+
+
+## Preparations
+
+First items completed was loading necessary librarys and data sets into R and preparing the data for testing. 
+
+```{r, message=FALSE}
+
+library(caret)
+library (randomForest)
+library(rpart)
+
+testing <- read.csv("pml-testing.csv", header = TRUE, sep = ",", na.strings = c("NA", ""))
+training <- read.csv("pml-training.csv", header = TRUE, sep = ",", na.strings = c("NA", ""))
+```
+
+There were NA values in the data set so to have more clean data, these were made to equal 0. 
+
+```{r}
+trainingData<-training[,colSums(is.na(training)) == 0]
+testingData <-testing[,colSums(is.na(testing)) == 0]
+```
+
+Additionally, the first seven columns in the data sets were determined to not be neccessary for the prediction model. These were removed from the training and testing sets as well. 
+
+```{r}
+trainingData   <-trainingData[,-c(1:7)]
+testingData <-testingData[,-c(1:7)]
+```
+
+To perform cross-validation, the trainingData data set was subset into subtraining and subtesting sets using random sampling. We will build our model on the sub-training set and then evaluate this model on the sub-testing set. 
+
+The seed was set to 1233 for all models for reproducability. 
+
+```{r}
+set.seed(1233)
+
+inTrain<- createDataPartition(trainingData$classe, p=.70,  list = FALSE)
+
+subTrain<-trainingData[inTrain,]
+subTest<- trainingData[-inTrain,]
+```
+
+To be able to perform the tests the "classe" variable in the subTrain and subTest sets was converted from a character class to factor.
+
+```{r}
+subTrain$classe<-as.factor(subTrain$classe)
+subTest$classe<-as.factor(subTest$classe)
+```
+
+Before testing, let's get an overview of the data. 
+
+```{r}
+Perc<- prop.table((table(subTrain$classe))*100)
+cbind(freq=table(subTrain$classe), Perc = Perc)
+plot(subTrain$classe, main = "Levels of classe variable in subTrain data set", ylab = "frequency", xlab = "classe levels")
+```
+
+We can see here that each level of the classe variable are close in number of frequency. There are clearly more of Class A.
+
+```{r}
+dim(subTrain)
+```
+
+We will be testing on 52 predictor variables to predict Classe. All are continuous variable except for our target variable (classe).
+
+## Models
+
+### Decision Tree
+
+Because we are attempting to classify our target variable based on a set of continuous predictor variables, it was decided to first attempt to create the model with a Decision Tree. 
+
+```{r}
+tree<- rpart(classe~., data = subTrain, method = "class")
+TreePredict<- predict(tree, subTest, type="class")
+confusionMatrix(TreePredict, subTest$classe)
+```
+
+Unfortunately, we can see here that the accuracy of the prediction on our subTest data was only 73%. This might be because decision trees can be prone to over fitting.
+
+### Random Forest
+
+To attempt to get better accuracy and decrease our out of sample error, we attempted a Random Forest model which is less prone to over fitting. 
+
+```{r}
+forest<- randomForest(classe~., data = subTrain, method= "class")
+subPredict<- predict(forest, subTest, type = "class")
+confusionMatrix(subPredict, subTest$classe)
+```
+
+We can see here that our accuracy is much higher (99.56%). Additionally, our Positive and Negative predictive values are much closer to 1 for all classes as compared to the Decision Tree model. This will be the final model used for our final test. 
+
+### Final Test
+
+```{r}
+finalTest<- predict(forest, testing, type = "class")
+finalTest
+```
+
+
+
+
+
+
+
+
